@@ -1,0 +1,71 @@
+**free                                                       
+Ctl-opt option(*srcstmt:*nodebugio) bndDir('QC2LE':'WEBSRV');
+Ctl-opt DftActGrp(*no);                                      
+                                                             
+Dcl-PR WriteToWeb ExtProc('QtmhWrStout');                    
+  Datavar     Char(65535)  Options(*Varsize);                
+  DataVarLen  Int(10)      Const;                            
+  ErrCode     Char(8000)   Options(*Varsize);                
+End-PR;                                                      
+                                                             
+Dcl-DS ErrDS   Qualified;                                    
+  BytesProv   Int(10)   Inz(0);                              
+  BytesAvail  Int(10)   Inz(0);                              
+End-DS;                                                      
+                                                             
+Dcl-PR GetEnv Pointer ExtProc('getenv');                     
+  *N Pointer Value Options(*string);                         
+End-PR;                                                      
+                                                             
+/COPY QSYSINC/QRPGLESRC,QUSEC                        
+                                                     
+Dcl-PR ReadStdInput ExtProc('QtmhRdStin');           
+  szRtnBuffer  Char(65535) Options(*Varsize);        
+  nBufLen      Int(10)     Const;                    
+  nRtnLen      Int(10);                              
+  QUSEC                    Like(QUSEC);              
+End-PR;                                              
+                                                     
+Dcl-PR   Translate    ExtPgm('QDCXLATE');            
+  *N Packed(5:0)   Const;                            
+  *N Char(32766)   Options(*varsize);                
+  *N Char(10)      Const;                            
+End-PR;                                              
+                                                     
+Dcl-S Data Char(5000);                               
+Dcl-C CRLF x'0d25';                                  
+Dcl-S URL  Char(100);                                
+Dcl-S ContentType Char(100);                         
+Dcl-S ReqMethod Char(20);                            
+Dcl-S RtnBuffer Char(4096) Inz;                              
+Dcl-S RtnLen    Int(10);                                     
+Dcl-DS apiError LikeDS(QUSEC) Inz;                           
+Dcl-S EBCData Char(32766) Inz;                               
+                                                             
+Data = 'Content-type:text/html' + CRLF + CRLF;               
+WriteToWeb(Data : %len(%Trim(Data)):ErrDS);                  
+Data = '<h1>hello world from RPG</h1>';                      
+WriteToWeb(Data : %len(%Trim(Data)): ErrDS);                 
+URL = %Str(GetEnv('REQUEST_URI'));                           
+ReqMethod = %Str(GetEnv('REQUEST_METHOD'));                  
+                                                             
+If ReqMethod = 'POST';                                       
+  ContentType = %Str(GetEnv('CONTENT_TYPE'));                
+  ReadStdInput(RtnBuffer: %size(RtnBuffer): RtnLen:apiError);
+  If ContentType = 'text/plain';                             
+    EBCData = %Trim(rtnBuffer);                              
+    Translate(%len(%Trim(EBCData)): EBCData: 'QTCPASC');     
+  EndIf;                                                     
+EndIF;                     
+                                                        
+Data = 'URL:' + %trim(URL) + '<br>' +                   
+       'Req Method:' + %trim(ReqMethod) + '<br>' +      
+       'Contenttype:' + %trim(ContentType) + CRLF;      
+WriteToWeb(Data : %len(%Trim(Data)):ErrDS);             
+Data = 'Data:' + %trim(RtnBuffer) + CRLF;               
+WriteToWeb(Data : %len(%Trim(Data)):ErrDS);             
+Data = 'Converted Data:'+ %trim(EBCData);               
+writeToWeb(Data : %len(%Trim(Data)):ErrDS);             
+                                                        
+*Inlr = *On;                                            
+Return;                                                 
