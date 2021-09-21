@@ -1,0 +1,6 @@
+                R EMPDATAR                                         
+                  EMPID          3S 0       COLHDG('EMPLOYEE ID')  
+                  EMPNAME       30A         COLHDG('EMPLOYEE NAME')
+                  MOBNO         10S 0       COLHDG('MOBILE NUMBER')
+                  DEPT          10A         COLHDG('DEPARTMENT')   
+                K EMPID                                            
